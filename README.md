@@ -263,3 +263,77 @@ be able to correctly respond to a search request as long as it can communicate
 with at least one replica of every shard, or one replica of every relevant
 shard if the user limited the search via the shards or _route_ parameters.
 
+> What is zkConnected?
+
+A header that is transmitted in every search response.
+
+> A zkConnected header is included in every search response indicating if the
+> node that processed the request was connected with ZooKeeper at the time
+
+> What does the `shards.tolerant` parameter do?
+
+By default a request will fail, if one or more shards are not available. If
+partial results are ok, `shard.tolerant` can be set to true.
+
+> How to get more information in case of partial results?
+
+Provide `shards.info` parameter alongside `shards.tolerant` so more details are
+returned.
+
+## Write side fault tolerance
+
+* [Docs](https://lucene.apache.org/solr/guide/6_6/read-and-write-side-fault-tolerance.html#ReadandWriteSideFaultTolerance-WriteSideFaultTolerance)
+
+### Recovery
+
+> Since the Transaction Log consists of a record of updates, it allows for more
+> robust indexing because it includes redoing the uncommitted updates if
+> indexing is interrupted.
+
+> If a leader goes down, it may have sent requests to some replicas and not
+> others. So when a new potential leader is identified, it runs a synch process
+> against the other replicas. If this is successful, everything should be
+> consistent, the leader registers as active, and normal actions proceed. If a
+> replica is too far out of sync, the system asks for a full
+> replication/replay-based recovery.
+
+> If an update fails because cores are reloading schemas and some have finished
+> but others have not, the leader tells the nodes that the update failed and
+> starts the recovery procedure.
+
+Sounds not too good:
+
+> If an update request succeeds on the leader but fails on both replicas, for
+> whatever reason, the update request is still considered successful from the
+> perspective of the client.
+
+Solr can make the process more transparent with a `min_rf` parameter:
+
+> Solr supports the optional min_rf parameter on update requests that cause the
+> server to return the achieved replication factor for an update request in the
+> response.
+
+But this parameter is not enforcing.
+
+> On the client side, if the achieved replication factor is less than the
+> acceptable level, then the client application can take additional measures to
+> handle the degraded state.
+
+## Overview of config and parameters
+
+* ZK ensembles
+* ZK config files
+* ZK access control
+* Collections API
+* Parameter reference
+* Command Line Utilities
+* SolrCloud legacy config files
+* ConfigSets API
+
+## Zookeeper
+
+> Although Solr comes bundled with Apache ZooKeeper, you should consider
+> yourself discouraged from using this internal ZooKeeper in production.
+
+> This majority is also called a quorum.
+

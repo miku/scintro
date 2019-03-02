@@ -158,7 +158,7 @@ applications).
 
 > IgnoreCommitOptimizeUpdateProcessorFactory
 
-```
+```xml
 <updateRequestProcessorChain name="ignore-commit-from-client" default="true">
   <processor class="solr.IgnoreCommitOptimizeUpdateProcessorFactory">
     <int name="statusCode">200</int>
@@ -169,4 +169,63 @@ applications).
 </updateRequestProcessorChain>
 ```
 
-Include defaults, because chain replaces the default.
+Include defaults, because chain replaces the default. It is possible to return
+other status codes as well.
+
+## Distributed Requests
+
+Docs: [https://lucene.apache.org/solr/guide/6_6/distributed-requests.html](https://lucene.apache.org/solr/guide/6_6/distributed-requests.html)
+
+> When a Solr node receives a search request, the request is routed behind the
+> scenes to a replica of a shard that is part of the collection being searche
+
+It is possible to limit the query to a number of shards (You have the option of
+searching over all of your data or just parts of it.).
+
+How to limit the shards, that are queried?
+
+* [Docs](https://lucene.apache.org/solr/guide/6_6/distributed-requests.html#DistributedRequests-LimitingWhichShardsareQueried)
+
+Example:
+[http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,shardo2](http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,shard2),
+a random replica is chosen - but it is also to specify down to replica level,
+e.g.
+[...shards=localhost:7574/solr/gettingstarted|localhost:7500/solr/gettingstarted](http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=localhost:7574/solr/gettingstarted|localhost:7500/solr/gettingstarted),
+mix and match (random replica, explicit list of replicas) is possible.
+
+Configure various shard handlers:
+
+```xml
+<requestHandler name="standard" class="solr.SearchHandler" default="true">
+  <!-- other params go here -->
+  <shardHandler class="HttpShardHandlerFactory">
+    <int name="socketTimeOut">1000</int>
+    <int name="connTimeOut">5000</int>
+  </shardHandler>
+</requestHandler>
+```
+
+Default favors throughput over latency.
+
+There are at least four options for document stats implementation, [docs](https://lucene.apache.org/solr/guide/6_6/distributed-requests.html#DistributedRequests-ConfiguringstatsCache_DistributedIDF_).
+
+```xml
+<statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
+```
+
+> How can a distributed dead lock occur?
+
+The number of threads serving HTTP requests is smaller than the number of
+shards. Each shard gets a request and distrbutes it to all other nodes, you
+need at least as many threads as shards.
+
+> Care should be taken to ensure that the max number of threads serving HTTP
+> requests is greater than the possible number of requests from both top-level
+> clients and other shards.
+
+In order to limit the number of queries, SolrCloud can be instructed to prefer
+local shards, if they are available, include `preferLocalShards=true` in the
+query.
+
+
+

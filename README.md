@@ -227,5 +227,39 @@ In order to limit the number of queries, SolrCloud can be instructed to prefer
 local shards, if they are available, include `preferLocalShards=true` in the
 query.
 
+## Read and write site fault tolerance
 
+* [docs](https://lucene.apache.org/solr/guide/6_6/read-and-write-side-fault-tolerance.html)
+
+Here, we might get an answer to the persistence guarantee on shard with multiple replicas.
+
+> Writes will be acknowledged only if they are durable; i.e., you won’t lose data.
+
+> In a SolrCloud cluster each individual node load balances read requests
+> across all the replicas in collection.
+
+If we have multiple replicas, they will be used for queries.
+
+> You still need a load balancer on the 'outside' that talks to the cluster, or
+> you need a smart client which understands how to read and interact with
+> Solr’s metadata in ZooKeeper.
+
+Why exactly? In Java:
+[CloudSolrClient](https://lucene.apache.org/solr/6_6_0//solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html).
+
+> SolrJ client class to communicate with SolrCloud. Instances of this class
+> communicate with Zookeeper to discover Solr endpoints for SolrCloud
+> collections, and then use the LBHttpSolrClient to issue requests. This class
+> assumes the id field for your documents is called 'id' - if this is not the
+> case, you must set the right name with setIdField(String).
+
+A kind of discovery tool to see, where to send requests to, given just the
+coordinator (ZK) address.
+
+Question: Is this always necessary? Would it be ok to just list all possible Solr nodes?
+
+Even if some nodes in the cluster are offline or unreachable, a Solr node will
+be able to correctly respond to a search request as long as it can communicate
+with at least one replica of every shard, or one replica of every relevant
+shard if the user limited the search via the shards or _route_ parameters.
 
